@@ -567,10 +567,3 @@ BEGIN
 END//
 
 DELIMITER ;
-
-
-/* =========================================================
-   QUICK TESTS (optional — handy when grading the file)
-   ========================================================= */
-CALL get_payments_by_status('Completed');
-SELECT calculate_ticket_total(4001) AS ticket_total;
