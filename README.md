@@ -11,19 +11,19 @@ A two-sided web interface for the AirlineDB project (Deliverable 5):
 
 - **MySQL 8** — database server
 - **Node.js + Express** — backend API
-- **Vanilla JavaScript + Tailwind CSS** — frontend (no build step required)
+- **JavaScript + Tailwind CSS** — frontend
 
 ---
 
 ## Prerequisites
 
-1. **MySQL 8** installed and running locally — [MySQL Community Server](https://dev.mysql.com/downloads/mysql/) and [MySQL Workbench](https://dev.mysql.com/downloads/workbench/).
-2. **Node.js 18 or newer** — [download here](https://nodejs.org/).
+1. **MySQL 8** installed and running locally — install [MySQL Community Server](https://dev.mysql.com/downloads/mysql/).
+2. **MySQL Workbench** — [download here](https://dev.mysql.com/downloads/workbench/). All database setup in this guide is done through Workbench.
+3. **Node.js 18 or newer** — [download here](https://nodejs.org/).
 
-Verify both are installed:
+Verify Node is installed (open any terminal):
 
 ```bash
-mysql --version
 node --version
 npm --version
 ```
@@ -32,17 +32,17 @@ npm --version
 
 ## Setup
 
-### Step 1. Import the database
+### Step 1. Import the database (MySQL Workbench)
 
-```bash
-mysql -u root -p < Airline_Database.sql
-```
-
-Or open `Airline_Database.sql` in MySQL Workbench and click the lightning bolt to execute.
+1. Open **MySQL Workbench** and connect to your local MySQL server (usually a connection called *Local instance MySQL80* or similar — enter your `root` password when prompted).
+2. Go to **File → Open SQL Script…** and select `Airline_Database.sql` from the project folder.
+3. With the script open in the query tab, click the **lightning bolt icon** (Execute, or press Ctrl+Shift+Enter / Cmd+Shift+Enter) to run the entire script.
+4. In the **Output** panel at the bottom, confirm every statement shows a green checkmark with no errors.
+5. In the **Schemas** panel on the left, click the refresh icon. You should now see `AirlineDB` listed. Expand it to verify the tables, views, stored procedures, functions, and triggers are all present.
 
 ### Step 2. (Recommended) Create a dedicated MySQL user for the app
 
-In MySQL Workbench, run once:
+In MySQL Workbench, open a new query tab and run once:
 
 ```sql
 CREATE USER 'airlineapp'@'localhost' IDENTIFIED BY 'airline123';
@@ -60,6 +60,8 @@ DB_PASSWORD=airline123
 (Alternatively, you can use your own MySQL `root` credentials — just put them in `.env`.)
 
 ### Step 3. Install dependencies
+
+Open a terminal in the project folder and run:
 
 ```bash
 npm install
@@ -142,23 +144,23 @@ airline-website/
 
 ## Troubleshooting
 
-**"● database offline" pill in admin** — Wrong credentials in `.env`, or MySQL isn't running. Restart MySQL, edit `.env`, then restart the server (`Ctrl+C` then `npm start`).
+**"● database offline" pill in admin** — Wrong credentials in `.env`, or MySQL isn't running. Confirm your local connection works in MySQL Workbench. If it fails there too, start the MySQL service (Windows: Services panel → *MySQL80* → Start; macOS: System Settings → MySQL → Start MySQL Server). Then edit `.env` and restart the server (`Ctrl+C` then `npm start`).
 
-**"ER_ACCESS_DENIED_ERROR"** — Wrong username or password in `.env`. If using `airlineapp`, make sure you ran the `CREATE USER` SQL.
+**"ER_ACCESS_DENIED_ERROR"** — Wrong username or password in `.env`. If using `airlineapp`, make sure you ran the `CREATE USER` SQL in Workbench.
 
-**"Unknown database 'AirlineDB'"** — The SQL file wasn't imported. Run `mysql -u root -p < Airline_Database.sql`.
+**"Unknown database 'AirlineDB'"** — The SQL file wasn't imported. Repeat Setup Step 1 in MySQL Workbench.
 
 **Port 3000 already in use** — Change `PORT=3000` in `.env` to a free port (e.g., `3001`).
 
-**Login fails on customer site** — Make sure you re-imported the SQL file. Older versions didn't have the `password` column.
+**Login fails on customer site** — Make sure you re-imported the SQL file in Workbench. Older versions didn't have the `password` column.
 
 ---
 
 ## Re-importing fresh data
 
-Useful right before the demo to reset to a known clean state:
+Useful right before the demo to reset to a known clean state. In MySQL Workbench:
 
-```bash
-mysql -u root -p -e "DROP DATABASE AirlineDB;"
-mysql -u root -p < Airline_Database.sql
-```
+1. Open a new query tab.
+2. Run: `DROP DATABASE AirlineDB;`
+3. Open `Airline_Database.sql` via **File → Open SQL Script…** and execute it again with the lightning bolt.
+4. Refresh the **Schemas** panel to confirm `AirlineDB` is back.
