@@ -8,7 +8,7 @@ Web interface for the AirlineDB project (Deliverable 5). Provides CRUD operation
 
 - **MySQL 8** — database server
 - **Node.js + Express** — backend API
-- **Vanilla JavaScript + Tailwind CSS** — frontend (no build step required)
+- **JavaScript + Tailwind CSS** — frontend
 
 ---
 
@@ -16,14 +16,13 @@ Web interface for the AirlineDB project (Deliverable 5). Provides CRUD operation
 
 Before running the project, make sure you have:
 
-1. **MySQL 8** installed and running locally
-   - Easiest: install [MySQL Community Server](https://dev.mysql.com/downloads/mysql/) and [MySQL Workbench](https://dev.mysql.com/downloads/workbench/).
-2. **Node.js 18 or newer** — [download here](https://nodejs.org/).
+1. **MySQL 8** installed and running locally — install [MySQL Community Server](https://dev.mysql.com/downloads/mysql/).
+2. **MySQL Workbench** — [download here](https://dev.mysql.com/downloads/workbench/). All database setup in this guide is done through Workbench.
+3. **Node.js 18 or newer** — [download here](https://nodejs.org/).
 
-Verify both are installed:
+Verify Node is installed (open any terminal):
 
 ```bash
-mysql --version
 node --version
 npm --version
 ```
@@ -32,21 +31,19 @@ npm --version
 
 ## Setup (run once)
 
-### Step 1. Import the database
+### Step 1. Import the database (MySQL Workbench)
 
-Open a terminal in the project folder and run:
+1. Open **MySQL Workbench** and connect to your local MySQL server (usually a connection called *Local instance MySQL80* or similar — enter your `root` password when prompted).
+2. Go to **File → Open SQL Script…** and select `Airline_Database.sql` from the project folder.
+3. With the script open in the query tab, click the **lightning bolt icon** (Execute, or press Ctrl+Shift+Enter / Cmd+Shift+Enter) to run the entire script.
+4. In the **Output** panel at the bottom, confirm every statement shows a green checkmark with no errors.
+5. In the **Schemas** panel on the left, click the refresh icon. You should now see `AirlineDB` listed. Expand it to verify the tables, views, stored procedures, functions, and triggers are all present.
 
-```bash
-mysql -u root -p < Airline_Database.sql
-```
-
-Enter your MySQL `root` password when prompted. This creates the `AirlineDB` database with all tables, data, triggers, views, the procedure, and the function.
-
-> Alternative using MySQL Workbench: open `Airline_Database.sql`, then **File → Open SQL Script…** and click the **lightning bolt** to execute.
+This creates the `AirlineDB` database with all tables, data, triggers, views, the procedure, and the function.
 
 ### Step 2. Configure database credentials
 
-Open the `.env` file in this folder and set your MySQL password:
+Open the `.env` file in this folder in any text editor and set your MySQL password:
 
 ```
 DB_HOST=localhost
@@ -59,7 +56,7 @@ PORT=3000
 
 ### Step 3. Install dependencies
 
-In the same terminal:
+Open a terminal in the project folder and run:
 
 ```bash
 npm install
@@ -136,30 +133,30 @@ airline-website/
 ## Troubleshooting
 
 **"Database offline" pill at top right.**
-- Confirm MySQL is running (`mysqladmin -u root -p ping` should reply `mysqld is alive`).
-- Confirm the password in `.env` matches your MySQL `root` password.
-- Confirm `Airline_Database.sql` was imported (`SHOW DATABASES;` should list `AirlineDB`).
+- Confirm MySQL is running. In MySQL Workbench, your local connection should connect without errors. If it fails, start the MySQL service (Windows: Services panel → *MySQL80* → Start; macOS: System Settings → MySQL → Start MySQL Server).
+- Confirm the password in `.env` matches the password you use to log into Workbench.
+- Confirm `Airline_Database.sql` was imported. In Workbench's **Schemas** panel, you should see `AirlineDB`. If not, repeat Setup Step 1.
 
 **"ER_ACCESS_DENIED_ERROR".**
-- Wrong password in `.env`. Update and restart with `npm start`.
+- Wrong password in `.env`. Update it to match your Workbench `root` password and restart with `npm start`.
 
 **"ECONNREFUSED 127.0.0.1:3306".**
-- MySQL isn't running. Start it from your system services panel or with the MySQL command line tool.
+- MySQL isn't running. Start the MySQL service as described above and try again.
 
 **Port 3000 already in use.**
 - Change `PORT=3000` in `.env` to a free port (e.g. `3001`) and restart.
 
 **Triggers don't seem to fire.**
-- Check that `Airline_Database.sql` ran without errors. The triggers are defined at the bottom of that file.
-- Try `SHOW TRIGGERS;` inside the `AirlineDB` database — you should see three triggers.
+- Check that `Airline_Database.sql` ran without errors in Workbench's Output panel.
+- In Workbench, open a new query tab and run `USE AirlineDB; SHOW TRIGGERS;` — you should see three triggers listed.
 
 ---
 
 ## Re-importing fresh data
 
-If you've been clicking around CRUD and want to reset the database:
+If you've been clicking around CRUD and want to reset the database, do this in MySQL Workbench:
 
-```bash
-mysql -u root -p -e "DROP DATABASE AirlineDB;"
-mysql -u root -p < Airline_Database.sql
-```
+1. Open a new query tab.
+2. Run: `DROP DATABASE AirlineDB;`
+3. Open `Airline_Database.sql` via **File → Open SQL Script…** and execute it again with the lightning bolt.
+4. Refresh the **Schemas** panel to confirm `AirlineDB` is back.
