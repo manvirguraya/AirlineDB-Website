@@ -1,9 +1,9 @@
 /* ============================================================
    AirlineDB front-end logic
    ============================================================ */
- 
+
 const API = '';  // same origin (Express serves the static files)
- 
+
 /* =============== Schema definitions for CRUD =============== */
 /*
   For each entity:
@@ -101,7 +101,7 @@ const ENTITIES = {
         note: 'Note: check_payment_amount trigger flips status to "Invalid" when amount ≤ 0.'
     }
 };
- 
+
 /* =============== Query metadata =============== */
 const QUERIES = [
     { id: 'q1', title: 'Q1 — Flight Summary',          tags: ['VIEW'] },
@@ -110,13 +110,13 @@ const QUERIES = [
     { id: 'q4', title: 'Q4 — Tickets & Revenue by Route',   tags: ['JOIN', 'AGGREGATION'] },
     { id: 'q5', title: 'Q5 — Above-Average Spenders',       tags: ['SUBQUERY'] }
 ];
- 
+
 /* ============================================================
    State
    ============================================================ */
 let currentEntity = 'customers';
 let editingRow    = null;
- 
+
 /* ============================================================
    Tab switching
    ============================================================ */
@@ -128,7 +128,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
     });
 });
- 
+
 /* ============================================================
    Toast helper
    ============================================================ */
@@ -138,7 +138,7 @@ function toast(msg, kind = 'success') {
     el.innerHTML = `<div class="${kind === 'success' ? 'toast-success' : 'toast-error'}">${msg}</div>`;
     setTimeout(() => el.classList.add('hidden'), 4000);
 }
- 
+
 /* ============================================================
    API helper
    ============================================================ */
@@ -150,7 +150,7 @@ async function api(method, path, body) {
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
 }
- 
+
 /* ============================================================
    CRUD: entity selector
    ============================================================ */
@@ -162,17 +162,17 @@ document.querySelectorAll('.entity-btn').forEach(btn => {
         loadEntity();
     });
 });
- 
+
 /* ============================================================
    CRUD: load and render
    ============================================================ */
 async function loadEntity() {
     const e = ENTITIES[currentEntity];
     document.getElementById('entity-title').textContent = e.title;
- 
+
     /* build create form */
     buildCreateForm(e);
- 
+
     /* fetch and render rows */
     try {
         const rows = await api('GET', e.endpoint);
@@ -181,11 +181,11 @@ async function loadEntity() {
         toast('Failed to load: ' + err.message, 'error');
     }
 }
- 
+
 function buildCreateForm(e) {
     const form = document.getElementById('create-form');
     form.innerHTML = '';
- 
+
     e.createFields.forEach(f => {
         const wrap = document.createElement('div');
         wrap.innerHTML = `
@@ -197,7 +197,7 @@ function buildCreateForm(e) {
         `;
         form.appendChild(wrap);
     });
- 
+
     /* submit row */
     const submitWrap = document.createElement('div');
     submitWrap.className = 'md:col-span-3 flex items-center justify-between mt-2';
@@ -206,7 +206,7 @@ function buildCreateForm(e) {
         <button type="submit" class="btn-warm">Add record</button>
     `;
     form.appendChild(submitWrap);
- 
+
     form.onsubmit = async (ev) => {
         ev.preventDefault();
         const data = Object.fromEntries(new FormData(form));
@@ -220,19 +220,19 @@ function buildCreateForm(e) {
         }
     };
 }
- 
+
 function renderTable(e, rows) {
     const head = document.getElementById('table-head');
     const body = document.getElementById('table-body');
     head.innerHTML = e.columns.map(c => `<th>${c}</th>`).join('') + '<th class="text-right">actions</th>';
- 
+
     document.getElementById('row-count').textContent = `${rows.length} row${rows.length === 1 ? '' : 's'}`;
- 
+
     if (!rows.length) {
         body.innerHTML = `<tr><td colspan="${e.columns.length + 1}" class="text-center py-8 text-muted">No records</td></tr>`;
         return;
     }
- 
+
     body.innerHTML = rows.map(r => `
         <tr>
             ${e.columns.map(c => `<td>${formatCell(r[c])}</td>`).join('')}
@@ -242,7 +242,7 @@ function renderTable(e, rows) {
             </td>
         </tr>
     `).join('');
- 
+
     /* attach edit/delete handlers */
     body.querySelectorAll('.btn-edit').forEach(b => {
         b.onclick = () => openEditModal(rows.find(r => String(r[e.idField]) === b.dataset.id));
@@ -260,7 +260,7 @@ function renderTable(e, rows) {
         };
     });
 }
- 
+
 function formatCell(v) {
     if (v === null || v === undefined) return '<span class="text-muted/50">—</span>';
     /* Detect real ISO datetime strings (e.g. "2026-04-29T20:15:00.000Z").
@@ -271,17 +271,17 @@ function formatCell(v) {
     }
     return String(v);
 }
- 
+
 /* ============================================================
    Edit modal
    ============================================================ */
 function openEditModal(row) {
     const e = ENTITIES[currentEntity];
     editingRow = row;
- 
+
     const form = document.getElementById('edit-form');
     form.innerHTML = '';
- 
+
     e.editFields.forEach(fname => {
         const fdef = e.createFields.find(c => c.name === fname);
         if (!fdef) return;
@@ -294,10 +294,10 @@ function openEditModal(row) {
         `;
         form.appendChild(wrap);
     });
- 
+
     document.getElementById('edit-modal').classList.remove('hidden');
 }
- 
+
 function formatForInput(type, value) {
     if (!value && value !== 0) return '';
     if (type === 'datetime-local') {
@@ -314,13 +314,13 @@ function formatForInput(type, value) {
     }
     return value;
 }
- 
+
 document.getElementById('modal-close').onclick =
 document.getElementById('modal-cancel').onclick = () => {
     document.getElementById('edit-modal').classList.add('hidden');
     editingRow = null;
 };
- 
+
 document.getElementById('modal-save').onclick = async () => {
     const e = ENTITIES[currentEntity];
     const form = document.getElementById('edit-form');
@@ -334,7 +334,7 @@ document.getElementById('modal-save').onclick = async () => {
         toast('Update failed: ' + err.message, 'error');
     }
 };
- 
+
 /* ============================================================
    Queries tab
    ============================================================ */
@@ -353,12 +353,12 @@ function renderQueriesTab() {
             <div class="result-area"></div>
         </div>
     `).join('');
- 
+
     grid.querySelectorAll('.run-q').forEach(b => {
         b.onclick = () => runQuery(b.dataset.q);
     });
 }
- 
+
 async function runQuery(id) {
     const card = document.getElementById(`card-${id}`);
     const area = card.querySelector('.result-area');
@@ -372,7 +372,7 @@ async function runQuery(id) {
         area.innerHTML = `<div class="result-box error">Error: ${err.message}</div>`;
     }
 }
- 
+
 function renderRowsTable(rows) {
     if (!rows || !rows.length) {
         return `<div class="result-box">No rows returned.</div>`;
@@ -391,7 +391,7 @@ function renderRowsTable(rows) {
         </div>
     `;
 }
- 
+
 /* ============================================================
    Procedure & Function tab
    ============================================================ */
@@ -409,7 +409,7 @@ document.getElementById('proc-run').onclick = async () => {
         out.innerHTML = `<div class="result-box error">${err.message}</div>`;
     }
 };
- 
+
 document.getElementById('fn-run').onclick = async () => {
     const id = document.getElementById('fn-ticket-id').value;
     const out = document.getElementById('fn-result');
@@ -428,7 +428,7 @@ document.getElementById('fn-run').onclick = async () => {
         out.innerHTML = `<div class="result-box error">${err.message}</div>`;
     }
 };
- 
+
 /* ============================================================
    Trigger demos
    ============================================================ */
@@ -455,7 +455,7 @@ document.querySelectorAll('.trigger-btn').forEach(btn => {
         }
     };
 });
- 
+
 /* ============================================================
    Boot
    ============================================================ */
@@ -474,9 +474,9 @@ async function boot() {
         pill.classList.add('pill-offline');
         toast('Cannot reach database. Check your .env credentials and that MySQL is running.', 'error');
     }
- 
+
     loadEntity();
     renderQueriesTab();
 }
- 
+
 boot();

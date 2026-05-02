@@ -23,6 +23,7 @@ CREATE TABLE Customer (
     customer_id INT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL DEFAULT 'changeme',
     phone VARCHAR(20)
 );
 
@@ -194,12 +195,12 @@ CREATE TABLE Seat_Assignment (
 
 /* ---------- Customer & Loyalty ---------- */
 
-INSERT INTO Customer (customer_id, name, email, phone) VALUES
-(1, 'John Smith', 'john.smith@email.com', '515-111-1111'),
-(2, 'Emma Davis', 'emma.davis@email.com', '515-222-2222'),
-(3, 'Michael Brown', 'michael.brown@email.com', '515-333-3333'),
-(4, 'Sophia Wilson', 'sophia.wilson@email.com', '515-444-4444'),
-(5, 'Liam Johnson', 'liam.johnson@email.com', '515-555-5555');
+INSERT INTO Customer (customer_id, name, email, password, phone) VALUES
+(1, 'John Smith',     'john.smith@email.com',     'pass123', '515-111-1111'),
+(2, 'Emma Davis',     'emma.davis@email.com',     'pass123', '515-222-2222'),
+(3, 'Michael Brown',  'michael.brown@email.com',  'pass123', '515-333-3333'),
+(4, 'Sophia Wilson',  'sophia.wilson@email.com',  'pass123', '515-444-4444'),
+(5, 'Liam Johnson',   'liam.johnson@email.com',   'pass123', '515-555-5555');
 
 INSERT INTO Loyalty_Account (member_id, customer_id, points_balance, tier) VALUES
 (101, 1, 12000, 'Gold'),

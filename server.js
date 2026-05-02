@@ -19,7 +19,19 @@ const path    = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+/* Serve static assets (CSS, JS, images) from the public folder */
+app.use('/static', express.static(path.join(__dirname, 'public')));
+
+/* Page routes:
+     /         → customer.html (the customer-facing site, default landing page)
+     /admin    → admin.html    (the airline-employee dashboard, what we built originally) */
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'customer.html'));
+});
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
 /* ---------- DB connection pool ---------- */
 const pool = mysql.createPool({
@@ -41,15 +53,17 @@ const wrap = fn => (req, res, next) => fn(req, res, next).catch(next);
    CRUD: CUSTOMER
    ========================================================= */
 app.get('/api/customers', wrap(async (req, res) => {
-    const [rows] = await pool.query('SELECT * FROM Customer ORDER BY customer_id');
+    const [rows] = await pool.query(
+        'SELECT customer_id, name, email, phone FROM Customer ORDER BY customer_id'
+    );
     res.json(rows);
 }));
 
 app.post('/api/customers', wrap(async (req, res) => {
-    const { customer_id, name, email, phone } = req.body;
+    const { customer_id, name, email, phone, password } = req.body;
     await pool.query(
-        'INSERT INTO Customer (customer_id, name, email, phone) VALUES (?, ?, ?, ?)',
-        [customer_id, name, email, phone || null]
+        'INSERT INTO Customer (customer_id, name, email, phone, password) VALUES (?, ?, ?, ?, ?)',
+        [customer_id, name, email, phone || null, password || 'changeme']
     );
     res.status(201).json({ message: 'Customer created', customer_id });
 }));
@@ -68,6 +82,221 @@ app.delete('/api/customers/:id', wrap(async (req, res) => {
     const [result] = await pool.query('DELETE FROM Customer WHERE customer_id=?', [req.params.id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
     res.json({ message: 'Customer deleted' });
+}));
+
+/* =========================================================
+   CUSTOMER-FACING ENDPOINTS
+   These power the public customer site (login, my flights,
+   buy ticket, my loyalty, edit profile).
+
+   NOTE on auth: for a class demo, we keep this simple.
+   The login endpoint returns the customer_id on success;
+   the frontend stores it in localStorage and includes it
+   on every subsequent request. This is NOT how you'd build
+   real auth (which uses sessions, JWT, hashed passwords),
+   but it's plenty to demonstrate the database layer.
+   ========================================================= */
+
+/* Login */
+app.post('/api/login', wrap(async (req, res) => {
+    const { email, password } = req.body;
+    const [rows] = await pool.query(
+        'SELECT customer_id, name, email, phone FROM Customer WHERE email = ? AND password = ?',
+        [email, password]
+    );
+    if (rows.length === 0) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    res.json({ message: 'Login successful', customer: rows[0] });
+}));
+
+/* Customer profile (read) */
+app.get('/api/me/:customer_id', wrap(async (req, res) => {
+    const [rows] = await pool.query(
+        'SELECT customer_id, name, email, phone FROM Customer WHERE customer_id = ?',
+        [req.params.customer_id]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
+    res.json(rows[0]);
+}));
+
+/* Customer profile update */
+app.put('/api/me/:customer_id', wrap(async (req, res) => {
+    const { name, email, phone } = req.body;
+    const [result] = await pool.query(
+        'UPDATE Customer SET name=?, email=?, phone=? WHERE customer_id=?',
+        [name, email, phone || null, req.params.customer_id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ message: 'Profile updated' });
+}));
+
+/* Customer's loyalty status */
+app.get('/api/me/:customer_id/loyalty', wrap(async (req, res) => {
+    const [rows] = await pool.query(
+        'SELECT * FROM Loyalty_Account WHERE customer_id = ?',
+        [req.params.customer_id]
+    );
+    if (rows.length === 0) return res.json(null);
+    res.json(rows[0]);
+}));
+
+/* Customer's tickets (their full booking history) */
+app.get('/api/me/:customer_id/tickets', wrap(async (req, res) => {
+    const [rows] = await pool.query(`
+        SELECT
+            t.ticket_id,
+            t.fare_class,
+            t.base_price,
+            t.taxes_fees,
+            (t.base_price + t.taxes_fees) AS total_price,
+            t.ticket_status,
+            r.booking_reference,
+            r.booking_date,
+            p.name AS passenger_name,
+            fi.flight_instance_id,
+            fi.flight_date,
+            fi.status AS flight_status,
+            sf.flight_number,
+            sf.scheduled_departure_time,
+            sf.scheduled_arrival_time,
+            origin.airport_code  AS origin_code,
+            origin.city          AS origin_city,
+            dest.airport_code    AS destination_code,
+            dest.city            AS destination_city
+        FROM Ticket t
+        JOIN Reservation r        ON t.booking_reference = r.booking_reference
+        JOIN Passenger p          ON t.passenger_id      = p.passenger_id
+        LEFT JOIN Flight_Instance fi   ON t.flight_instance_id = fi.flight_instance_id
+        LEFT JOIN Scheduled_Flight sf  ON fi.flight_number     = sf.flight_number
+        LEFT JOIN Route route          ON sf.route_id          = route.route_id
+        LEFT JOIN Airport origin       ON route.origin_airport_code      = origin.airport_code
+        LEFT JOIN Airport dest         ON route.destination_airport_code = dest.airport_code
+        WHERE r.customer_id = ?
+        ORDER BY fi.flight_date DESC, t.ticket_id DESC
+    `, [req.params.customer_id]);
+    res.json(rows);
+}));
+
+/* Cancel a ticket — sets ticket_status to 'Canceled' */
+app.post('/api/me/:customer_id/tickets/:ticket_id/cancel', wrap(async (req, res) => {
+    /* Verify the ticket actually belongs to this customer first */
+    const [check] = await pool.query(`
+        SELECT t.ticket_id FROM Ticket t
+        JOIN Reservation r ON t.booking_reference = r.booking_reference
+        WHERE t.ticket_id = ? AND r.customer_id = ?
+    `, [req.params.ticket_id, req.params.customer_id]);
+
+    if (check.length === 0) {
+        return res.status(403).json({ error: 'Ticket not found or does not belong to this customer' });
+    }
+
+    const [result] = await pool.query(
+        `UPDATE Ticket SET ticket_status = 'Canceled' WHERE ticket_id = ?`,
+        [req.params.ticket_id]
+    );
+    res.json({ message: 'Ticket canceled' });
+}));
+
+/* Browse / search available flights for purchase.
+   Returns scheduled flights with their route info; the customer can
+   then pick a flight_instance to buy. */
+app.get('/api/flights/search', wrap(async (req, res) => {
+    const { origin, destination } = req.query;
+    let sql = `
+        SELECT
+            fi.flight_instance_id,
+            fi.flight_date,
+            fi.status,
+            sf.flight_number,
+            sf.scheduled_departure_time,
+            sf.scheduled_arrival_time,
+            origin.airport_code  AS origin_code,
+            origin.city          AS origin_city,
+            dest.airport_code    AS destination_code,
+            dest.city            AS destination_city,
+            route.distance,
+            a.model              AS aircraft_model,
+            a.capacity
+        FROM Flight_Instance fi
+        JOIN Scheduled_Flight sf ON fi.flight_number = sf.flight_number
+        JOIN Route route         ON sf.route_id     = route.route_id
+        JOIN Airport origin      ON route.origin_airport_code      = origin.airport_code
+        JOIN Airport dest        ON route.destination_airport_code = dest.airport_code
+        JOIN Aircraft a          ON fi.tail_number  = a.tail_number
+        WHERE fi.status <> 'Canceled'
+    `;
+    const params = [];
+    if (origin) {
+        sql += ' AND origin.airport_code = ?';
+        params.push(origin.toUpperCase());
+    }
+    if (destination) {
+        sql += ' AND dest.airport_code = ?';
+        params.push(destination.toUpperCase());
+    }
+    sql += ' ORDER BY fi.flight_date, sf.scheduled_departure_time';
+
+    const [rows] = await pool.query(sql, params);
+    res.json(rows);
+}));
+
+/* Buy a ticket — creates a Reservation, Passenger, Ticket, Itinerary_Segment,
+   and Payment all in one go. This is a great demo of multi-table CRUD
+   that exercises foreign keys and the check_payment_amount trigger. */
+app.post('/api/me/:customer_id/buy', wrap(async (req, res) => {
+    const customer_id = parseInt(req.params.customer_id);
+    const { flight_instance_id, passenger_name, fare_class, base_price } = req.body;
+
+    /* Generate IDs by reading current max and adding 1 */
+    const [[{ next_booking }]]    = await pool.query(`SELECT CONCAT('R', LPAD(COALESCE(MAX(CAST(SUBSTRING(booking_reference,2) AS UNSIGNED)),0)+1, 3, '0')) AS next_booking FROM Reservation`);
+    const [[{ next_passenger }]]  = await pool.query('SELECT COALESCE(MAX(passenger_id),2000)+1 AS next_passenger FROM Passenger');
+    const [[{ next_ticket }]]     = await pool.query('SELECT COALESCE(MAX(ticket_id),4000)+1 AS next_ticket FROM Ticket');
+    const [[{ next_segment }]]    = await pool.query('SELECT COALESCE(MAX(segment_id),7000)+1 AS next_segment FROM Itinerary_Segment');
+    const [[{ next_payment }]]    = await pool.query('SELECT COALESCE(MAX(payment_id),5000)+1 AS next_payment FROM Payment');
+
+    const taxes = Math.round(base_price * 0.1 * 100) / 100;
+    const total = Math.round((parseFloat(base_price) + taxes) * 100) / 100;
+
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        await conn.query(
+            'INSERT INTO Reservation (booking_reference, customer_id, booking_date, channel) VALUES (?, ?, CURDATE(), ?)',
+            [next_booking, customer_id, 'Online']
+        );
+        await conn.query(
+            'INSERT INTO Passenger (passenger_id, customer_id, name, date_of_birth) VALUES (?, ?, ?, ?)',
+            [next_passenger, customer_id, passenger_name, '1990-01-01']
+        );
+        await conn.query(
+            'INSERT INTO Ticket (ticket_id, booking_reference, passenger_id, flight_instance_id, base_price, fare_class, taxes_fees, ticket_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [next_ticket, next_booking, next_passenger, flight_instance_id, base_price, fare_class, taxes, 'Confirmed']
+        );
+        await conn.query(
+            'INSERT INTO Itinerary_Segment (segment_id, ticket_id, flight_instance_id, segment_number) VALUES (?, ?, ?, 1)',
+            [next_segment, next_ticket, flight_instance_id]
+        );
+        await conn.query(
+            'INSERT INTO Payment (payment_id, booking_reference, amount, payment_date, payment_status) VALUES (?, ?, ?, NOW(), ?)',
+            [next_payment, next_booking, total, 'Completed']
+        );
+
+        await conn.commit();
+
+        res.status(201).json({
+            message: 'Ticket purchased',
+            booking_reference: next_booking,
+            ticket_id: next_ticket,
+            total: total
+        });
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 }));
 
 /* =========================================================

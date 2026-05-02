@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyline · Fly with Us</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky1:    '#0c4a6e',  // deep ocean blue
+                        sky2:    '#0369a1',  // sky blue
+                        sky3:    '#0ea5e9',  // bright sky
+                        cream:   '#fef9f0',
+                        sun:     '#f59e0b',  // warm amber
+                        sun2:    '#d97706',
+                        ink:     '#0c1e2e',
+                        muted:   '#64748b'
+                    },
+                    fontFamily: {
+                        display: ['Fraunces', 'serif'],
+                        sans:    ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        body {
+            background: linear-gradient(180deg, #fef9f0 0%, #fef9f0 50%, #f0f9ff 100%);
+            min-height: 100vh;
+            font-feature-settings: "ss01", "cv11";
+        }
+
+        /* Decorative cloud silhouettes in the background */
+        .clouds {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.06;
+            z-index: 0;
+            background-image:
+                radial-gradient(ellipse 800px 200px at 20% 30%, #0369a1 0%, transparent 60%),
+                radial-gradient(ellipse 600px 150px at 80% 60%, #0ea5e9 0%, transparent 60%);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0369a1, #0c4a6e);
+            color: white;
+            padding: 0.7rem 1.4rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 200ms;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(3, 105, 161, 0.35);
+        }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-sun {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 0.7rem 1.4rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 200ms;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        .btn-sun:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-ghost {
+            background: white;
+            color: #0c4a6e;
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            border: 1px solid rgba(12, 74, 110, 0.15);
+            cursor: pointer;
+            transition: all 150ms;
+        }
+        .btn-ghost:hover { background: #f0f9ff; }
+
+        .btn-danger {
+            background: white;
+            color: #b91c1c;
+            padding: 0.4rem 0.85rem;
+            border-radius: 0.375rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid rgba(185, 28, 28, 0.25);
+            cursor: pointer;
+            transition: all 150ms;
+        }
+        .btn-danger:hover { background: #b91c1c; color: white; }
+
+        input[type="text"], input[type="number"], input[type="email"],
+        input[type="password"], input[type="date"], select {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.95rem;
+            border: 1px solid rgba(12, 74, 110, 0.2);
+            border-radius: 0.5rem;
+            background: white;
+            color: #0c1e2e;
+            transition: border-color 150ms, box-shadow 150ms;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px rgba(12, 30, 46, 0.06), 0 1px 3px rgba(12, 30, 46, 0.04);
+            border: 1px solid rgba(12, 74, 110, 0.06);
+        }
+
+        /* Flight card with route line */
+        .route-line {
+            position: relative;
+            height: 2px;
+            background: linear-gradient(90deg, #0ea5e9 0%, #0ea5e9 50%, transparent 50%);
+            background-size: 16px 2px;
+            background-repeat: repeat-x;
+        }
+        .route-line::after {
+            content: '✈';
+            position: absolute;
+            right: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #0369a1;
+            font-size: 0.9rem;
+            background: white;
+            padding: 0 4px;
+        }
+
+        /* Loyalty tier styling */
+        .tier-bronze   { background: linear-gradient(135deg, #92400e, #b45309); color: white; }
+        .tier-silver   { background: linear-gradient(135deg, #64748b, #94a3b8); color: white; }
+        .tier-gold     { background: linear-gradient(135deg, #d97706, #f59e0b); color: white; }
+        .tier-platinum { background: linear-gradient(135deg, #1e293b, #475569); color: white; }
+
+        /* Status pills */
+        .status-pill { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .status-confirmed { background: #dcfce7; color: #166534; }
+        .status-canceled  { background: #fee2e2; color: #991b1b; }
+        .status-refunded  { background: #e0e7ff; color: #3730a3; }
+        .status-used      { background: #f3f4f6; color: #4b5563; }
+
+        .toast-success {
+            background: #064e3b;
+            color: white;
+            padding: 0.85rem 1.15rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-weight: 500;
+        }
+        .toast-error {
+            background: #7f1d1d;
+            color: white;
+            padding: 0.85rem 1.15rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-weight: 500;
+        }
+
+        .fade-in { animation: fadeIn 300ms ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .nav-link {
+            padding: 0.6rem 1rem;
+            font-weight: 500;
+            color: #64748b;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 150ms;
+        }
+        .nav-link:hover { color: #0c4a6e; background: rgba(12, 74, 110, 0.05); }
+        .nav-active { color: #0c4a6e; background: rgba(12, 74, 110, 0.08); }
+    </style>
+</head>
+<body class="font-sans text-ink">
+
+<div class="clouds"></div>
+
+<!-- ====================== LOGIN VIEW ====================== -->
+<div id="login-view" class="relative min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md fade-in">
+        <div class="text-center mb-8">
+            <div class="inline-block mb-4">
+                <span class="text-5xl">✈</span>
+            </div>
+            <h1 class="font-display text-5xl font-semibold text-sky1 tracking-tight">Skyline</h1>
+            <p class="text-muted mt-2 italic">Fly above the ordinary</p>
+        </div>
+
+        <div class="card p-8">
+            <h2 class="font-display text-2xl font-semibold mb-6">Welcome back</h2>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="you@email.com" required value="john.smith@email.com">
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required value="pass123">
+                </div>
+                <button type="submit" class="btn-primary w-full">Sign in</button>
+            </form>
+
+            <div id="login-error" class="hidden mt-4 p-3 rounded-md bg-red-50 text-red-700 text-sm"></div>
+
+            <div class="mt-6 pt-6 border-t border-slate-200 text-xs text-muted">
+                <p class="mb-2 font-semibold uppercase tracking-wide">Demo Accounts</p>
+                <p>All passwords are <code class="bg-slate-100 px-1 rounded">pass123</code></p>
+                <ul class="mt-2 space-y-0.5">
+                    <li>john.smith@email.com (Gold)</li>
+                    <li>emma.davis@email.com (Silver)</li>
+                    <li>michael.brown@email.com (Platinum)</li>
+                </ul>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-muted mt-6">
+            Airline employee?
+            <a href="/admin" class="text-sky2 hover:underline font-medium">Go to admin portal →</a>
+        </p>
+    </div>
+</div>
+
+<!-- ====================== DASHBOARD VIEW ====================== -->
+<div id="dashboard-view" class="hidden relative min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20 backdrop-blur-md bg-white/90">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">✈</span>
+                <div>
+                    <h1 class="font-display text-xl font-semibold text-sky1 leading-none">Skyline</h1>
+                    <p class="text-xs text-muted mt-0.5">Welcome, <span id="user-greeting" class="font-medium text-sky1">Customer</span></p>
+                </div>
+            </div>
+            <button id="logout-btn" class="btn-ghost text-sm">Sign out</button>
+        </div>
+        <nav class="max-w-6xl mx-auto px-6 pb-3 flex gap-1 overflow-x-auto">
+            <button class="nav-link nav-active" data-section="search">Search Flights</button>
+            <button class="nav-link" data-section="trips">My Trips</button>
+            <button class="nav-link" data-section="loyalty">Loyalty Status</button>
+            <button class="nav-link" data-section="profile">Profile</button>
+        </nav>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8 relative z-10">
+
+        <!-- ===== SECTION: SEARCH FLIGHTS ===== -->
+        <section id="section-search" class="customer-section">
+            <div class="mb-8 fade-in">
+                <h2 class="font-display text-4xl font-semibold tracking-tight">Where to next?</h2>
+                <p class="text-muted mt-2">Search our network of flights and book your next journey.</p>
+            </div>
+
+            <!-- Search form -->
+            <div class="card p-6 mb-6">
+                <div class="grid md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label>From</label>
+                        <select id="search-origin">
+                            <option value="">Any origin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>To</label>
+                        <select id="search-destination">
+                            <option value="">Any destination</option>
+                        </select>
+                    </div>
+                    <button id="search-btn" class="btn-primary">Search Flights</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="search-results" class="space-y-4"></div>
+        </section>
+
+        <!-- ===== SECTION: MY TRIPS ===== -->
+        <section id="section-trips" class="customer-section hidden">
+            <div class="mb-8 fade-in">
+                <h2 class="font-display text-4xl font-semibold tracking-tight">My Trips</h2>
+                <p class="text-muted mt-2">Your bookings and travel history.</p>
+            </div>
+            <div id="trips-list" class="space-y-4"></div>
+        </section>
+
+        <!-- ===== SECTION: LOYALTY ===== -->
+        <section id="section-loyalty" class="customer-section hidden">
+            <div class="mb-8 fade-in">
+                <h2 class="font-display text-4xl font-semibold tracking-tight">Loyalty Status</h2>
+                <p class="text-muted mt-2">Your membership and points balance.</p>
+            </div>
+            <div id="loyalty-card"></div>
+        </section>
+
+        <!-- ===== SECTION: PROFILE ===== -->
+        <section id="section-profile" class="customer-section hidden">
+            <div class="mb-8 fade-in">
+                <h2 class="font-display text-4xl font-semibold tracking-tight">Profile</h2>
+                <p class="text-muted mt-2">Update your personal information.</p>
+            </div>
+            <div class="card p-8 max-w-xl">
+                <form id="profile-form" class="space-y-4">
+                    <div>
+                        <label>Full Name</label>
+                        <input type="text" id="profile-name" required>
+                    </div>
+                    <div>
+                        <label>Email</label>
+                        <input type="email" id="profile-email" required>
+                    </div>
+                    <div>
+                        <label>Phone</label>
+                        <input type="text" id="profile-phone">
+                    </div>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- ====================== BUY MODAL ====================== -->
+<div id="buy-modal" class="hidden fixed inset-0 bg-ink/50 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+    <div class="card p-8 max-w-md w-full">
+        <h3 class="font-display text-2xl font-semibold mb-2">Book your flight</h3>
+        <p id="buy-flight-info" class="text-sm text-muted mb-6"></p>
+
+        <form id="buy-form" class="space-y-4">
+            <div>
+                <label>Passenger Name</label>
+                <input type="text" id="buy-passenger" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label>Cabin Class</label>
+                    <select id="buy-class">
+                        <option value="Economy" data-price="250">Economy</option>
+                        <option value="Business" data-price="600">Business</option>
+                        <option value="First" data-price="1200">First Class</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Total Price</label>
+                    <input type="text" id="buy-price-display" readonly value="$275.00">
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" id="buy-cancel" class="btn-ghost flex-1">Cancel</button>
+                <button type="submit" class="btn-sun flex-1">Confirm Booking</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-40 max-w-sm hidden"></div>
+
+<script src="/static/customer.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirlineDB · Admin Console</title>
+
+    <!-- Tailwind via CDN (no build step required) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Distinctive serif/sans pairing -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/styles.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink:    '#0b1f3a',  // deep navy
+                        slate2: '#1f3557',
+                        cream:  '#faf6ee',
+                        warm:   '#d97706',  // amber accent
+                        warm2:  '#b45309',
+                        muted:  '#64748b'
+                    },
+                    fontFamily: {
+                        display: ['Fraunces', 'serif'],
+                        sans:    ['Inter', 'system-ui', 'sans-serif'],
+                        mono:    ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-cream text-ink font-sans min-h-screen">
+
+    <!-- ===== Header ===== -->
+    <header class="border-b border-ink/10 bg-cream/90 backdrop-blur sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-md bg-ink flex items-center justify-center">
+                    <span class="text-cream font-display font-bold text-lg">A</span>
+                </div>
+                <div>
+                    <h1 class="font-display text-2xl font-semibold tracking-tight leading-none">AirlineDB</h1>
+                    <p class="text-xs text-muted mt-0.5">Airline Employee Portal · Admin View</p>
+                </div>
+            </div>
+            <div id="status-pill" class="text-xs font-mono px-3 py-1.5 rounded-full bg-ink/5 text-muted">
+                connecting…
+            </div>
+            <a href="/" class="text-xs text-muted hover:text-ink ml-3">← Customer site</a>
+        </div>
+
+        <!-- Tab navigation -->
+        <nav class="border-t border-ink/10">
+            <div class="max-w-7xl mx-auto px-6 flex gap-1 overflow-x-auto">
+                <button data-tab="crud"      class="tab-btn tab-active">CRUD Operations</button>
+                <button data-tab="queries"   class="tab-btn">5 SQL Queries</button>
+                <button data-tab="proc-fn"   class="tab-btn">Procedure &amp; Function</button>
+                <button data-tab="triggers"  class="tab-btn">Trigger Demos</button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+
+        <!-- ============================================================
+             TAB 1: CRUD
+             ============================================================ -->
+        <section id="tab-crud" class="tab-panel">
+            <div class="mb-6">
+                <h2 class="font-display text-3xl font-semibold tracking-tight">CRUD Operations</h2>
+                <p class="text-muted mt-1">Create, read, update, and delete records in any of the main tables. Foreign-key constraints and triggers run automatically.</p>
+            </div>
+
+            <!-- Table selector -->
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button class="entity-btn entity-active" data-entity="customers">Customers</button>
+                <button class="entity-btn" data-entity="loyalty">Loyalty Accounts</button>
+                <button class="entity-btn" data-entity="aircraft">Aircraft</button>
+                <button class="entity-btn" data-entity="airports">Airports</button>
+                <button class="entity-btn" data-entity="flight-instances">Flight Instances</button>
+                <button class="entity-btn" data-entity="payments">Payments</button>
+            </div>
+
+            <!-- Create form -->
+            <div class="bg-white border border-ink/10 rounded-lg p-6 mb-6 shadow-sm">
+                <h3 class="font-display text-lg font-semibold mb-4 flex items-center gap-2">
+                    <span class="text-warm">+</span> Add new record
+                </h3>
+                <form id="create-form" class="grid grid-cols-1 md:grid-cols-3 gap-3"></form>
+            </div>
+
+            <!-- Records table -->
+            <div class="bg-white border border-ink/10 rounded-lg overflow-hidden shadow-sm">
+                <div class="px-6 py-4 border-b border-ink/10 flex items-center justify-between">
+                    <h3 class="font-display text-lg font-semibold" id="entity-title">Customers</h3>
+                    <span id="row-count" class="text-xs text-muted font-mono"></span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="data-table">
+                        <thead class="bg-ink/5 text-ink/70 text-xs uppercase tracking-wider">
+                            <tr id="table-head"></tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-ink/5"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             TAB 2: 5 SQL QUERIES
+             ============================================================ -->
+        <section id="tab-queries" class="tab-panel hidden">
+            <div class="mb-6">
+                <h2 class="font-display text-3xl font-semibold tracking-tight">5 SQL Queries</h2>
+                <p class="text-muted mt-1">Each query is documented with what it does and which features it uses (joins, aggregations, subqueries, views).</p>
+            </div>
+
+            <div class="grid gap-4" id="queries-grid">
+                <!-- Generated by app.js -->
+            </div>
+        </section>
+
+        <!-- ============================================================
+             TAB 3: PROCEDURE & FUNCTION
+             ============================================================ -->
+        <section id="tab-proc-fn" class="tab-panel hidden">
+            <div class="mb-6">
+                <h2 class="font-display text-3xl font-semibold tracking-tight">Procedure &amp; Function</h2>
+                <p class="text-muted mt-1">A stored procedure (with input parameter) and a function (with input parameter).</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+
+                <!-- Procedure -->
+                <div class="bg-white border border-ink/10 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-mono px-2 py-0.5 rounded bg-warm/10 text-warm2">PROCEDURE</span>
+                    </div>
+                    <h3 class="font-display text-xl font-semibold mb-1">get_payments_by_status</h3>
+                    <p class="text-sm text-muted mb-4">Returns every payment matching the given status. Demonstrates a stored procedure with an <span class="font-mono">IN</span> parameter.</p>
+
+                    <div class="flex gap-2 mb-4">
+                        <select id="proc-status" class="flex-1 border border-ink/15 rounded px-3 py-2 text-sm">
+                            <option>Completed</option>
+                            <option>Pending</option>
+                            <option>Refunded</option>
+                            <option>Invalid</option>
+                            <option>Failed</option>
+                        </select>
+                        <button id="proc-run" class="btn-primary">Run</button>
+                    </div>
+                    <div id="proc-result" class="text-sm"></div>
+                </div>
+
+                <!-- Function -->
+                <div class="bg-white border border-ink/10 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs font-mono px-2 py-0.5 rounded bg-warm/10 text-warm2">FUNCTION</span>
+                    </div>
+                    <h3 class="font-display text-xl font-semibold mb-1">calculate_ticket_total</h3>
+                    <p class="text-sm text-muted mb-4">Given a ticket id, returns <span class="font-mono">base_price + taxes_fees</span>. Demonstrates a function with an input parameter.</p>
+
+                    <div class="flex gap-2 mb-4">
+                        <input id="fn-ticket-id" type="number" placeholder="Ticket ID (e.g. 4001)" value="4001"
+                               class="flex-1 border border-ink/15 rounded px-3 py-2 text-sm font-mono">
+                        <button id="fn-run" class="btn-primary">Run</button>
+                    </div>
+                    <div id="fn-result" class="text-sm"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ============================================================
+             TAB 4: TRIGGER DEMOS
+             ============================================================ -->
+        <section id="tab-triggers" class="tab-panel hidden">
+            <div class="mb-6">
+                <h2 class="font-display text-3xl font-semibold tracking-tight">Trigger Demonstrations</h2>
+                <p class="text-muted mt-1">Each button performs a database operation that activates one of the three triggers. The result shown below confirms the trigger fired.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <!-- Trigger 1 -->
+                <div class="bg-white border border-ink/10 rounded-lg p-6 shadow-sm flex flex-col">
+                    <span class="text-xs font-mono px-2 py-0.5 rounded bg-warm/10 text-warm2 self-start mb-3">TRIGGER 1</span>
+                    <h3 class="font-display text-lg font-semibold mb-2">check_payment_amount</h3>
+                    <p class="text-sm text-muted mb-4 flex-1">Insert a payment with <span class="font-mono">amount = 0</span> and intended status <span class="font-mono">"Completed"</span>. The trigger should flip its status to <span class="font-mono">"Invalid"</span>.</p>
+                    <button class="btn-primary trigger-btn" data-trigger="demo-payment">Fire Trigger 1</button>
+                    <div class="trigger-result mt-4 text-xs"></div>
+                </div>
+
+                <!-- Trigger 2 -->
+                <div class="bg-white border border-ink/10 rounded-lg p-6 shadow-sm flex flex-col">
+                    <span class="text-xs font-mono px-2 py-0.5 rounded bg-warm/10 text-warm2 self-start mb-3">TRIGGER 2</span>
+                    <h3 class="font-display text-lg font-semibold mb-2">set_loyalty_tier_insert</h3>
+                    <p class="text-sm text-muted mb-4 flex-1">Create a loyalty account with 25,000 points and tier <span class="font-mono">"Bronze"</span>. The trigger should auto-upgrade it to <span class="font-mono">"Platinum"</span>.</p>
+                    <button class="btn-primary trigger-btn" data-trigger="demo-loyalty">Fire Trigger 2</button>
+                    <div class="trigger-result mt-4 text-xs"></div>
+                </div>
+
+                <!-- Trigger 3 -->
+                <div class="bg-white border border-ink/10 rounded-lg p-6 shadow-sm flex flex-col">
+                    <span class="text-xs font-mono px-2 py-0.5 rounded bg-warm/10 text-warm2 self-start mb-3">TRIGGER 3</span>
+                    <h3 class="font-display text-lg font-semibold mb-2">update_flight_status</h3>
+                    <p class="text-sm text-muted mb-4 flex-1">Update flight 3003 with an <span class="font-mono">actual_departure_time</span> 90 min after schedule. The trigger should set status to <span class="font-mono">"Delayed"</span>.</p>
+                    <button class="btn-primary trigger-btn" data-trigger="demo-flight">Fire Trigger 3</button>
+                    <div class="trigger-result mt-4 text-xs"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== Edit modal ===== -->
+    <div id="edit-modal" class="fixed inset-0 bg-ink/40 backdrop-blur-sm hidden z-30 flex items-center justify-center p-4">
+        <div class="bg-cream rounded-lg shadow-xl w-full max-w-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display text-xl font-semibold">Edit record</h3>
+                <button id="modal-close" class="text-muted hover:text-ink text-2xl leading-none">&times;</button>
+            </div>
+            <form id="edit-form" class="space-y-3"></form>
+            <div class="flex justify-end gap-2 mt-6">
+                <button id="modal-cancel" class="btn-ghost">Cancel</button>
+                <button id="modal-save"   class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast ===== -->
+    <div id="toast" class="fixed bottom-6 right-6 hidden z-40 max-w-sm"></div>
+
+    <footer class="border-t border-ink/10 mt-16">
+        <div class="max-w-7xl mx-auto px-6 py-6 text-xs text-muted flex justify-between">
+            <span>AirlineDB · Database Implementation Project</span>
+            <span class="font-mono">localhost:3000</span>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
