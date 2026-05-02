@@ -75,9 +75,9 @@ CREATE TABLE Route (
     destination_airport_code VARCHAR(10) NOT NULL,
     distance DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (origin_airport_code) REFERENCES Airport(airport_code)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
+        ON DELETE RESTRICT ON UPDATE RESTRICT,
     FOREIGN KEY (destination_airport_code) REFERENCES Airport(airport_code)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
+        ON DELETE RESTRICT ON UPDATE RESTRICT,
     CONSTRAINT chk_route_diff_airports CHECK (origin_airport_code <> destination_airport_code),
     CONSTRAINT chk_route_distance CHECK (distance > 0)
 );
