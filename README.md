@@ -1,6 +1,6 @@
 # AirlineDB — Database Implementation Project
 
-Web interface for the AirlineDB project (Deliverable 5). Provides a two-sided application:
+Web interface for the AirlineDB. Provides a two-sided application:
 
 - A **customer-facing site** (Skyline) where travelers log in to search flights, book tickets, view their loyalty status, and manage their profile.
 - An **airline-employee admin portal** for full CRUD on the database, plus dashboards for the 5 required SQL queries, the procedure, the function, and the trigger demos.
